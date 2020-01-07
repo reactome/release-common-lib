@@ -34,10 +34,10 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git://github.com/reactome/data-release-pipeline.git</connection>
-		<developerConnection>scm:git:ssh://github.com/reactome/data-release-pipeline.git</developerConnection>
-		<url>https://github.com/reactome/data-release-pipeline/tree/develop/release-common-lib</url>
-		<tag>release-common-lib-1.2.0</tag>
+		<connection>scm:git:git://github.com/reactome/release-common-lib.git</connection>
+		<developerConnection>scm:git:ssh://github.com/reactome/release-common-lib.git</developerConnection>
+		<url>https://github.com/reactome/release-common-lib</url>
+		<tag>develop</tag>
 	</scm>
 
 	<properties>
@@ -56,7 +56,7 @@
 		<dependency>
 			<groupId>org.reactome.base</groupId>
 			<artifactId>reactome-base</artifactId>
-			<version>1.2.22</version>
+			<version>1.2.23-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
