@@ -1,0 +1,3 @@
+# Ignore IntelliJ files 
+.idea/
+release-common-lib.iml
