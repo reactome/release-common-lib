@@ -1,4 +1,5 @@
 target/
+release.properties
 
 # Ignore IntelliJ files 
 .idea/
