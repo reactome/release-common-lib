@@ -52,8 +52,6 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
 
 		<hamcrest.version>2.1</hamcrest.version>
 		<junit.version>5.1.0</junit.version>
@@ -146,6 +144,17 @@
 
 	<build>
 		<plugins>
+			<!-- sets the Java compiler version targeted by Maven -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+
 			<!-- creates jar file containing JavaDocs for the project-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -205,7 +214,10 @@
 				</configuration>
 			</plugin>
 
-			<!-- allows 'mvn release' command to create a new release of the project -->
+			<!--
+			allows 'mvn release' command to create a new release of the project
+            https://maven.apache.org/maven-release/maven-release-plugin/
+			-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
