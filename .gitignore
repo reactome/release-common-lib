@@ -1,0 +1,6 @@
+target/
+release.properties
+
+# Ignore IntelliJ files 
+.idea/
+release-common-lib.iml
