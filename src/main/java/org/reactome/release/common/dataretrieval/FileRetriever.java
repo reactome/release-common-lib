@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -120,22 +121,43 @@ public class FileRetriever implements DataRetriever {
 
 	protected void downloadData() throws Exception
 	{
-		logger.trace("Scheme is: "+this.uri.getScheme());
-		Path path = Paths.get(new URI("file://"+this.destination));
-		Files.createDirectories(path.getParent());
-		if (this.uri.getScheme().equals("http") || this.uri.getScheme().equals("https"))
+		logger.trace("Scheme is: {}", this.uri.getScheme());
+		Path path = null;
+		try
 		{
-			
-			doHttpDownload(path);
+			path = Paths.get(this.destination);
+			Files.createDirectories(path.getParent());
+			if (this.uri.getScheme().equals("http") || this.uri.getScheme().equals("https"))
+			{
+				
+				doHttpDownload(path);
+			}
+			else if (this.uri.getScheme().equals("ftp") || this.uri.getScheme().equals("sftp"))
+			{
+				doFtpDownload();
+			}
+			else
+			{
+				throw new UnsupportedSchemeException("URI "+this.uri.toString()+" uses an unsupported scheme: "+this.uri.getScheme());
+			}
 		}
-		else if (this.uri.getScheme().equals("ftp") || this.uri.getScheme().equals("sftp"))
+		catch (URISyntaxException e)
 		{
-			doFtpDownload();
+			logger.error("Error creating for download destination: "+this.destination, e);
+			e.printStackTrace();
 		}
-		else
+		catch (IOException e)
 		{
-			throw new UnsupportedSchemeException("URI "+this.uri.toString()+" uses an unsupported scheme: "+this.uri.getScheme());
+			logger.error("Unable to create parent directory of download destination: "+path.toString(), e);
+			e.printStackTrace();
 		}
+		catch (Exception e)
+		{
+			logger.error("Error performing download!", e);
+			throw e;
+		}
+		
+
 	}
 
 	protected void doFtpDownload() throws SocketException, IOException, Exception, FileNotFoundException
