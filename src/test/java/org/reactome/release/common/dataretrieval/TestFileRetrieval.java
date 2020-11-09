@@ -48,9 +48,6 @@ public class TestFileRetrieval {
 
 	private static final String MESSAGE_CONTENT = "this is a test";
 	
-//	@Mock
-//	FTPClient mockFtpClient ;
-	
 	@Mock
 	URI mockUri;
 	
@@ -64,6 +61,13 @@ public class TestFileRetrieval {
 	StatusLine mockStatusLine;
 	
 	HttpEntity entity = new ByteArrayEntity(MESSAGE_CONTENT.getBytes());
+	
+	@Before
+	public void setup()
+	{
+		MockitoAnnotations.openMocks(this);
+	}
+	
 	/**
 	 * Test method for {@link org.reactome.addlinks.dataretrieval.FileRetriever#fetchData()}.
 	 * @throws Exception 
@@ -106,15 +110,11 @@ public class TestFileRetrieval {
 			assertTrue(Files.exists(Paths.get(dest)));
 		}
 	}
-
 	
-	@Before
-	public void setup()
-	{
-		MockitoAnnotations.openMocks(this);
-	}
-
-	
+	/**
+	 * Test retrieving FTP data.
+	 * @throws Exception
+	 */
 	@Test
 	public void testFetchFTPData() throws Exception
 	{
@@ -153,6 +153,10 @@ public class TestFileRetrieval {
 		}
 	}
 	
+	/**
+	 * Test FTP Error handling.
+	 * @throws Exception
+	 */
 	@Test
 	public void testFetchFTPErr() throws Exception
 	{
@@ -196,6 +200,12 @@ public class TestFileRetrieval {
 		}
 	}
 	
+	/**
+	 * Test HTTP Error handling
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws Exception
+	 */
 	@Test
 	public void testHttpErr() throws ClientProtocolException, IOException, Exception
 	{
@@ -227,6 +237,12 @@ public class TestFileRetrieval {
 		}
 	}
 	
+	/**
+	 * Test HTTP Retry.
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws Exception
+	 */
 	@Test
 	public void testHttpRetry() throws ClientProtocolException, IOException, Exception
 	{
