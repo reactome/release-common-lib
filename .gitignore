@@ -13,6 +13,7 @@ hs_err_pid*
 
 target/
 release.properties
+src/test/resources/auth.properties
 
 # Ignore IntelliJ files 
 .idea/
