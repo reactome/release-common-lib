@@ -143,12 +143,12 @@ public class FileRetriever implements DataRetriever {
 		}
 		catch (URISyntaxException e)
 		{
-			logger.error("Error creating for download destination: "+this.destination, e);
+			logger.error("Error creating for download destination: " + this.destination, e);
 			e.printStackTrace();
 		}
 		catch (IOException e)
 		{
-			logger.error("Unable to create parent directory of download destination: "+path.toString(), e);
+			logger.error("Unable to create parent directory of download destination: " + path.toString(), e);
 			e.printStackTrace();
 		}
 		catch (Exception e)
@@ -160,12 +160,12 @@ public class FileRetriever implements DataRetriever {
 
 	}
 
-	protected void doFtpDownload() throws SocketException, IOException, Exception, FileNotFoundException
+	protected void doFtpDownload() throws SocketException, IOException, FileNotFoundException, Exception
 	{
 		doFtpDownload(null, null);
 	}
 	
-	protected void doFtpDownload(String user, String password) throws SocketException, IOException, Exception, FileNotFoundException
+	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, Exception
 	{
 		user = user == null || user.trim().equals("") ? "anonymous" : user;
 		password = password == null || password.trim().equals("") ? "" : password;
@@ -198,7 +198,7 @@ public class FileRetriever implements DataRetriever {
 		{
 			logger.error("Error while retrieving the file: {}",e.getMessage());
 			e.printStackTrace();
-			throw new Exception(e);
+			throw new IOException(e);
 		}
 		//Should probably have more/better reply-code checks.
 		logger.debug("retreive file reply code: {}",client.getReplyCode());
@@ -261,7 +261,7 @@ public class FileRetriever implements DataRetriever {
 				{
 					if (String.valueOf(statusCode).startsWith("4") || String.valueOf(statusCode).startsWith("5"))
 					{
-						logger.error("Response code was 4xx/5xx: {}, Status line is: ", statusCode, response.getStatusLine());
+						logger.error("Response code was 4xx/5xx: {}, Status line is: {}", statusCode, response.getStatusLine());
 					}
 					else
 					{
