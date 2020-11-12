@@ -59,12 +59,10 @@ public class GUnzipCallableTest
 		}
 		catch (FileNotFoundException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -91,9 +89,11 @@ public class GUnzipCallableTest
 		{
 			e.printStackTrace();
 			fail();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		}
+		catch (IOException e)
+		{
 			e.printStackTrace();
+			fail();
 		}
 	}
 	
