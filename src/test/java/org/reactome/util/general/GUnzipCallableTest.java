@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPOutputStream;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +36,21 @@ public class GUnzipCallableTest
 	@Before
 	public void setup()
 	{
+		try
+		{
+			// Get rid of any left-over files from prior runs.
+			// This could happen if a test fails before it gets to cleanup.
+			Files.deleteIfExists(Paths.get(PATH_TO_ZIP1));
+			Files.deleteIfExists(Paths.get(PATH_TO_ZIP2));
+			Files.deleteIfExists(Paths.get(PATH_TO_UNZIPPED1));
+			Files.deleteIfExists(Paths.get(PATH_TO_UNZIPPED2));
+		}
+		catch (IOException e1)
+		{
+			e1.printStackTrace();
+		}
+		
+		
 		// Need to create two files and zip them
 		try (FileOutputStream fos1 = new FileOutputStream(new File(PATH_TO_ZIP1));
 			FileOutputStream fos2 = new FileOutputStream(new File(PATH_TO_ZIP2));
@@ -55,7 +71,6 @@ public class GUnzipCallableTest
 			e.printStackTrace();
 		}
 	}
-	
 	
 	@Test
 	public void testGunzipCallable()
@@ -85,4 +100,21 @@ public class GUnzipCallableTest
 		}
 	}
 	
+
+	@After
+	public void cleanup()
+	{
+		try
+		{
+			// Clean up files.
+			Files.deleteIfExists(Paths.get(PATH_TO_ZIP1));
+			Files.deleteIfExists(Paths.get(PATH_TO_ZIP2));
+			Files.deleteIfExists(Paths.get(PATH_TO_UNZIPPED1));
+			Files.deleteIfExists(Paths.get(PATH_TO_UNZIPPED2));
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 }
