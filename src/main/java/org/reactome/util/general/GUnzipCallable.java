@@ -10,13 +10,26 @@ import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+
 /**
  * An object that can unzip a GZIP file, and mutliple instances of this type could be run in parallel.
  * It made more sense to implement Runnable, but ExecutorService.invokeAll only accepts Callables.
  * The return of this calling call() on this object will be true if unzipping doesn't completely fail,
  * but you should not rely on this. The source file does *not* get removed by this process.
+ * <br/><br/>
+ * Example usage:
+<pre>
+	GUnzipCallable datUnzipper1 = new GUnzipCallable(Paths.get("large_file_1.dat.gz"), Paths.get("./large_file_1.dat"));
+	GUnzipCallable datUnzipper2 = new GUnzipCallable(Paths.get("large_file_3.dat.gz"), Paths.get("./large_file_3.dat"));
+	GUnzipCallable unzipper3 = new GUnzipCallable(Paths.get("large_text_file.csv.gz"), Paths.get("/path/to/text/files/large_text_file.csv"));
+	GUnzipCallable unzipper4 = new GUnzipCallable(Paths.get("some_other_file.gz"), Paths.get("./some_other_file"));
+	
+	ExecutorService execService = Executors.newCachedThreadPool();
+	// The files are large and it could be slow to unzip them sequentially, so we will unzip them in parallel.
+	execService.invokeAll(Arrays.asList(datUnzipper1, datUnzipper2, unzipper3, unzipper4));
+	execService.shutdown();
+</pre>
  * @author sshorser
- *
  */
 public class GUnzipCallable implements Callable<Boolean>
 {
