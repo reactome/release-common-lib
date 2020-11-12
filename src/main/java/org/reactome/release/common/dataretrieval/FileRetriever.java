@@ -271,7 +271,6 @@ public class FileRetriever implements DataRetriever {
 					}
 				}
 				response.getEntity().writeTo(outputFile);
-//				Files.write(path, EntityUtils.toByteArray(response.getEntity()));
 				done = true;
 			}
 			catch (ConnectTimeoutException e)
