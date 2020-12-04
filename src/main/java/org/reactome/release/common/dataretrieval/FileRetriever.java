@@ -28,7 +28,6 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.UnsupportedSchemeException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
@@ -284,7 +283,7 @@ public class FileRetriever implements DataRetriever {
 				done = retries + 1 <= 0;
 				if (done)
 				{
-					throw new Exception("Connection timed out. Number of retries ("+this.numRetries+") exceeded. No further attempts will be made.",e);
+					throw new Exception("Connection timed out. Number of retries ("+this.numRetries+") exceeded. No further attempts will be made.", e);
 				}
 			}
 			catch (HttpHostConnectException e)
