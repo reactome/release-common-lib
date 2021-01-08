@@ -58,11 +58,11 @@ public abstract class ReleaseStep
 		this.testMode = Boolean.parseBoolean(props.getProperty("testMode", "true"));
 		if (!testMode)
 		{
-			logger.info("Test mode was NOT detcted.");
+			logger.info("Test mode was NOT requested.");
 		}
 		else
 		{
-			logger.info("Test mode was detected.");
+			logger.info("Test mode was requested in properties file.");
 		}
 	}
 
