@@ -85,12 +85,7 @@ public class GUnzipCallableTest
 			assertEquals(new String(Files.readAllBytes(Paths.get(PATH_TO_UNZIPPED1))), FILE1_CONTENT);
 			assertEquals(new String(Files.readAllBytes(Paths.get(PATH_TO_UNZIPPED2))), FILE2_CONTENT);
 		}
-		catch (InterruptedException e)
-		{
-			e.printStackTrace();
-			fail();
-		}
-		catch (IOException e)
+		catch (InterruptedException | IOException e)
 		{
 			e.printStackTrace();
 			fail();
