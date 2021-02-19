@@ -91,18 +91,18 @@ public class TestFileRetrieval {
 			
 			String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
 			retriever.setFetchDestination(dest);
-			Duration age = Duration.of(5,ChronoUnit.SECONDS);
+			Duration age = Duration.of(5, ChronoUnit.SECONDS);
 			retriever.setMaxAge(age);
 			
 			retriever.fetchData();
 			assertTrue(Files.exists(Paths.get(dest)));
 			
-			//Sleep for two seconds, and then re-download because the file is stale
-			Thread.sleep(Duration.of(2,ChronoUnit.SECONDS).toMillis());
+			//Sleep for two seconds, and then re-download because the file is stale.
+			Thread.sleep(Duration.of(6, ChronoUnit.SECONDS).toMillis());
 			retriever.fetchData();
 			assertTrue(Files.exists(Paths.get(dest)));
 			//now set a longer maxAge.
-			age = Duration.of(100,ChronoUnit.SECONDS);
+			age = Duration.of(100, ChronoUnit.SECONDS);
 			retriever.setMaxAge(age);
 			// this time, the file will not be stale (because maxAge is larger) so nothing will be downloaded.
 			retriever.fetchData();
