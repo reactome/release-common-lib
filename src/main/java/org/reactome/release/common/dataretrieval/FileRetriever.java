@@ -167,8 +167,17 @@ public class FileRetriever implements DataRetriever {
 	
 	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, Exception
 	{
-		user = user == null || user.trim().equals("") ? "anonymous" : user;
-		password = password == null || password.trim().equals("") ? "" : password;
+		// user is "anonymous" if provided username is null/empty
+		if (user == null || user.trim().equals(""))
+		{
+			user = "anonymous";
+		}
+		
+		// password is an empty string, if provided password is null/whitespace
+		if (password == null || password.trim().equals(""))
+		{
+			password = "";
+		}
 		FTPClient client = new FTPClient();
 		
 		client.connect(this.uri.getHost());
