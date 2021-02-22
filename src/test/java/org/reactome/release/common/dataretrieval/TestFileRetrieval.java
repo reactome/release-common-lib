@@ -97,7 +97,7 @@ public class TestFileRetrieval {
 			retriever.fetchData();
 			assertTrue(Files.exists(Paths.get(dest)));
 			
-			//Sleep for two seconds, and then re-download because the file is stale.
+			//Sleep for 6 seconds, and then re-download because the file is stale (MAX AGE was 5 seconds).
 			Thread.sleep(Duration.of(6, ChronoUnit.SECONDS).toMillis());
 			retriever.fetchData();
 			assertTrue(Files.exists(Paths.get(dest)));

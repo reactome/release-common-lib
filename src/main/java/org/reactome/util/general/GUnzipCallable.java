@@ -12,7 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 
 /**
- * An object that can unzip a GZIP file, and mutliple instances of this type could be run in parallel.
+ * An object that can unzip a GZIP file, and multiple instances of this type could be run in parallel.
  * It made more sense to implement Runnable, but ExecutorService.invokeAll only accepts Callables.
  * The return of this calling call() on this object will be true if unzipping doesn't completely fail,
  * but you should not rely on this. The source file does *not* get removed by this process.

@@ -143,7 +143,7 @@ public class FileRetriever implements DataRetriever {
 		}
 		catch (URISyntaxException e)
 		{
-			logger.error("Error creating for download destination: " + this.destination, e);
+			logger.error("Error creating download destination: " + this.destination, e);
 			e.printStackTrace();
 		}
 		catch (IOException e)

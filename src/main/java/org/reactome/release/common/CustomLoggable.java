@@ -18,7 +18,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 /**
- * An interface for classes that may want to customise they way they log.
+ * An interface for classes that may want to customise the way they log.
  * @author sshorser
  *
  */
@@ -29,7 +29,7 @@ public interface CustomLoggable
 	 * @param logFileName - custom name for log file.
 	 * @param oldAppenderName - the name of the appender to copy config from.
 	 * @param newAppenderName - the name of the new appender.
-	 * @param append - append, or not.
+	 * @param append - append, or not (truncate).
 	 * @param level - logging level.
 	 * @return
 	 */
