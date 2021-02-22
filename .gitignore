@@ -1,6 +1,26 @@
+# General files to ignore for Java project
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# VM crash file
+hs_err_pid*
+
 target/
 release.properties
+src/test/resources/auth.properties
 
 # Ignore IntelliJ files 
 .idea/
 release-common-lib.iml
+
+# Ignore Eclipse files
+.settings
+.classpath
+.project
+

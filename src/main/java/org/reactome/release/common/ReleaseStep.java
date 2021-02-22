@@ -58,11 +58,11 @@ public abstract class ReleaseStep
 		this.testMode = Boolean.parseBoolean(props.getProperty("testMode", "true"));
 		if (!testMode)
 		{
-			logger.info("Test mode is OFF - database will be updated!");
+			logger.info("Test mode was NOT requested.");
 		}
 		else
 		{
-			logger.info("Test mode is ON - no database changes will be made.");
+			logger.info("Test mode was requested in properties file.");
 		}
 	}
 
