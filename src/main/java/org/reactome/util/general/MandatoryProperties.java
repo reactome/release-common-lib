@@ -28,7 +28,7 @@ public class MandatoryProperties extends Properties
 	 * @author sshorser
 	 *
 	 */
-	public class PropertyHasNoValueException extends RuntimeException
+	public class PropertyHasNoValueException extends Exception
 	{
 		public PropertyHasNoValueException(String propName)
 		{
