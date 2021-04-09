@@ -69,7 +69,7 @@ public class MandatoryProperties extends Properties
 		
 		if (value != null && !value.trim().equals(""))
 		{
-			return key;
+			return value;
 		}
 		else
 		{
