@@ -19,36 +19,42 @@ public class MandatoryPropertiesTest
 	{
 		MandatoryProperties props = new MandatoryProperties();
 		props.put(PROP, VALUE);
-		assertEquals(props.get(PROP), VALUE);
+		assertEquals(props.getProperty(PROP), VALUE);
 	}
 	
 	@Test
 	public void testPropertyAbsent()
 	{
+		boolean passed = false;
 		MandatoryProperties props = new MandatoryProperties();
 		props.put(PROP, VALUE);
 		try
 		{
-			props.get(ABSENT_PROP);
+			props.getProperty(ABSENT_PROP);
 		}
 		catch (PropertyNotPresentException e)
 		{
-			assertTrue(e.getMessage().contains(ABSENT_PROP));
+			e.printStackTrace();
+			passed = e.getMessage().contains(ABSENT_PROP + " is not in this set of Properties.");
 		}
+		assertTrue(passed);
 	}
 	
 	@Test
 	public void testPropertyNoValue()
 	{
+		boolean passed = false;
 		MandatoryProperties props = new MandatoryProperties();
 		props.put(PROP, "");
 		try
 		{
-			props.get(PROP);
+			props.getMandatoryProperty(PROP);
 		}
 		catch (PropertyHasNoValueException e)
 		{
-			assertTrue(e.getMessage().contains(PROP));
+			e.printStackTrace();
+			passed = e.getMessage().contains(PROP + " is present in this set of Properties, but no value has been set for it.");
 		}
+		assertTrue(passed);
 	}
 }
