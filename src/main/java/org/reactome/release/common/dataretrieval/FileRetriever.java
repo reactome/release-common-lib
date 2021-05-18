@@ -1,4 +1,4 @@
-package org.reactome.release.common.dataretrieval;	
+package org.reactome.release.common.dataretrieval;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -30,6 +30,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+import org.reactome.release.common.dataretrieval.exceptions.DataRetrievalException;
+import org.reactome.release.common.dataretrieval.exceptions.FtpException;
+import org.reactome.release.common.dataretrieval.exceptions.RetriesExceeded;
 
 public class FileRetriever implements DataRetriever {
 
@@ -41,16 +44,16 @@ public class FileRetriever implements DataRetriever {
 	protected String retrieverName;
 	protected Logger logger;
 	protected boolean passiveFTP = false;
-	
-	
+
+
 	public FileRetriever()
 	{
 		this(null);
 	}
-	
+
 	/**
 	 * This constructor takes a string that will be used to name the logging output file.
-	 * 
+	 *
 	 * @param retrieverName - the name of this File Retriever - the log file produced by this class will be named "${retrieverName}.log"
 	 */
 	public FileRetriever(String retrieverName)
@@ -59,24 +62,24 @@ public class FileRetriever implements DataRetriever {
 		this.setRetrieverName(retrieverName);
 		this.logger = this.createLogger(this.retrieverName, "RollingRandomAccessFile", this.getClass().getName(), true, Level.DEBUG, this.logger, "Data Retriever");
 	}
-	
+
 	@Override
-	public void fetchData() throws Exception 
+	public void fetchData() throws RetriesExceeded, FtpException, IOException, DataRetrievalException
 	{
 		if (this.uri == null)
 		{
-			throw new RuntimeException("You must provide a URI from which the file will be downloaded!");
+			throw new IllegalArgumentException("You must provide a URI from which the file will be downloaded!");
 		}
-		else if (this.destination.trim().length() == 0)
+		else if (this.destination == null || this.destination.trim().length() == 0)
 		{
-			throw new RuntimeException("You must provide a destination to which the file will be downloaded!");
+			throw new IllegalArgumentException("You must provide a destination to which the file will be downloaded!");
 		}
 		//Before fetching anything, we need to check to see if the file already exists.
 		Path pathToFile = Paths.get(this.destination);
 		if (Files.exists(pathToFile))
 		{
 			BasicFileAttributes attributes = Files.readAttributes(pathToFile, BasicFileAttributes.class);
-			
+
 			Instant fileCreateTime = attributes.creationTime().toInstant();
 			Instant now = Instant.now();
 			//If the file is older than the maxAge...
@@ -98,7 +101,7 @@ public class FileRetriever implements DataRetriever {
 			//if file does not exist, get it from the URL.
 			downloadData();
 		}
-		
+
 		// Print some basic file stats.
 		if (Files.exists(pathToFile))
 		{
@@ -119,7 +122,7 @@ public class FileRetriever implements DataRetriever {
 		}
 	}
 
-	protected void downloadData() throws Exception
+	protected void downloadData() throws RetriesExceeded, FtpException, DataRetrievalException
 	{
 		logger.trace("Scheme is: {}", this.uri.getScheme());
 		Path path = null;
@@ -129,7 +132,7 @@ public class FileRetriever implements DataRetriever {
 			Files.createDirectories(path.getParent());
 			if (this.uri.getScheme().equals("http") || this.uri.getScheme().equals("https"))
 			{
-				
+
 				doHttpDownload(path);
 			}
 			else if (this.uri.getScheme().equals("ftp") || this.uri.getScheme().equals("sftp"))
@@ -141,45 +144,45 @@ public class FileRetriever implements DataRetriever {
 				throw new UnsupportedSchemeException("URI "+this.uri.toString()+" uses an unsupported scheme: "+this.uri.getScheme());
 			}
 		}
-		catch (URISyntaxException e)
-		{
-			logger.error("Error creating download destination: " + this.destination, e);
-			e.printStackTrace();
-		}
+//		catch (URISyntaxException e)
+//		{
+//			logger.error("Error creating download destination: " + this.destination, e);
+//			e.printStackTrace();
+//		}
 		catch (IOException e)
 		{
 			logger.error("Unable to create parent directory of download destination: " + path.toString(), e);
 			e.printStackTrace();
 		}
-		catch (Exception e)
-		{
-			logger.error("Error performing download!", e);
-			throw e;
-		}
-		
+//		catch (Exception e)
+//		{
+//			logger.error("Error performing download!", e);
+//			throw e;
+//		}
+
 
 	}
 
-	protected void doFtpDownload() throws SocketException, IOException, FileNotFoundException, Exception
+	protected void doFtpDownload() throws SocketException, IOException, FileNotFoundException, FtpException
 	{
 		doFtpDownload(null, null);
 	}
-	
-	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, Exception
+
+	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, FtpException
 	{
 		// user is "anonymous" if provided username is null/empty
 		if (user == null || user.trim().equals(""))
 		{
 			user = "anonymous";
 		}
-		
+
 		// password is an empty string, if provided password is null/whitespace
 		if (password == null || password.trim().equals(""))
 		{
 			password = "";
 		}
 		FTPClient client = new FTPClient();
-		
+
 		client.connect(this.uri.getHost());
 		if (this.passiveFTP)
 		{
@@ -215,7 +218,7 @@ public class FileRetriever implements DataRetriever {
 		{
 			String errorString = "5xx reply code detected (" + client.getReplyCode() + "), reply string is: "+client.getReplyString();
 			logger.error(errorString);
-			throw new Exception(errorString);
+			throw new FtpException(errorString);
 		}
 		client.logout();
 		client.disconnect();
@@ -231,7 +234,7 @@ public class FileRetriever implements DataRetriever {
 				baos.write(b);
 				b = inStream.read();
 			}
-	
+
 			try (FileOutputStream file = new FileOutputStream(this.destination))
 			{
 				baos.writeTo(file);
@@ -240,13 +243,13 @@ public class FileRetriever implements DataRetriever {
 		}
 	}
 
-	
-	protected void doHttpDownload(Path path) throws HttpHostConnectException, IOException, Exception
+
+	protected void doHttpDownload(Path path) throws HttpHostConnectException, IOException, RetriesExceeded
 	{
 		this.doHttpDownload(path, HttpClientContext.create());
 	}
-	
-	protected void doHttpDownload(Path path, HttpClientContext context) throws Exception, HttpHostConnectException, IOException
+
+	protected void doHttpDownload(Path path, HttpClientContext context) throws HttpHostConnectException, IOException, RetriesExceeded
 	{
 		HttpGet get = new HttpGet(this.uri);
 		//Need to multiply by 1000 because timeouts are in milliseconds.
@@ -254,9 +257,9 @@ public class FileRetriever implements DataRetriever {
 											.setConnectTimeout(1000 * (int)this.timeout.getSeconds())
 											.setSocketTimeout(1000 * (int)this.timeout.getSeconds())
 											.setConnectionRequestTimeout(1000 * (int)this.timeout.getSeconds()).build();
-		
+
 		get.setConfig(config);
-		
+
 		int retries = this.numRetries;
 		boolean done = retries + 1 <= 0;
 		while(!done)
@@ -292,7 +295,7 @@ public class FileRetriever implements DataRetriever {
 				done = retries + 1 <= 0;
 				if (done)
 				{
-					throw new Exception("Connection timed out. Number of retries ("+this.numRetries+") exceeded. No further attempts will be made.", e);
+					throw new RetriesExceeded("Connection timed out. Number of retries ("+this.numRetries+") exceeded. No further attempts will be made.", e);
 				}
 			}
 			catch (HttpHostConnectException e)
@@ -312,12 +315,12 @@ public class FileRetriever implements DataRetriever {
 	{
 		return this.maxAge;
 	}
-	
+
 	public URI getDataURL()
 	{
 		return this.uri;
 	}
-	
+
 	@Override
 	public void setDataURL(URI uri) {
 		this.uri = uri;
@@ -337,7 +340,7 @@ public class FileRetriever implements DataRetriever {
 	{
 		this.numRetries = i;
 	}
-	
+
 	public void setTimeout(Duration timeout)
 	{
 		this.timeout = timeout;
@@ -348,17 +351,17 @@ public class FileRetriever implements DataRetriever {
 	{
 		this.retrieverName = retrieverName;
 	}
-	
+
 	public String getRetrieverName()
 	{
 		return this.retrieverName;
 	}
-	
+
 	public void setPassiveFTP(boolean passiveMode)
 	{
 		this.passiveFTP = passiveMode;
 	}
-	
+
 	public boolean isPassiveFTP()
 	{
 		return this.passiveFTP ;
@@ -368,6 +371,6 @@ public class FileRetriever implements DataRetriever {
 	{
 		return this.numRetries;
 	}
-	
+
 }
 

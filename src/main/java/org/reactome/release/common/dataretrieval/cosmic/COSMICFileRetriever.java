@@ -1,6 +1,9 @@
 package org.reactome.release.common.dataretrieval.cosmic;
 
 import org.reactome.release.common.dataretrieval.AuthenticatableFileRetriever;
+import org.reactome.release.common.dataretrieval.exceptions.DataRetrievalException;
+import org.reactome.release.common.dataretrieval.exceptions.FtpException;
+import org.reactome.release.common.dataretrieval.exceptions.RetriesExceeded;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -23,9 +26,9 @@ import org.apache.http.util.EntityUtils;
 
 /**
  * Get COSMIC data file.
- * 
+ *
  * The COSMIC data file cannot be downloaded in a single step.
- * To download the COSMIC data file programmatically, you must first request the file 
+ * To download the COSMIC data file programmatically, you must first request the file
  * with a Basic Authorization header which includes the username and password, base64 encoded.
  * You will get a small JSON document back, if authorization succeeds. This document will contain
  * a "url" element. The data file can be accessed if you download the URL that is returned in the JSON
@@ -39,12 +42,12 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 	{
 		super(retrieverName);
 	}
-	
+
 	public COSMICFileRetriever()
 	{
 		super();
 	}
-	
+
 	private boolean retrieveAndSetCOSMICDownloadURL() throws UnsupportedEncodingException
 	{
 		boolean gotDownloadURLOK = false;
@@ -52,10 +55,10 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		// 1) Generate a base64-encoded string of the username and password.
 		// 2) Send this encoded string in the "Authorization: Basic" header to the URL of the file you want.
 		// 3) Parse the response - extract the "url" JSON attribute and then download THAT URL to get the REAL file.
-		
+
 		// Encoded string.
 		String encodedUsernamePassword = Base64.getEncoder().encodeToString((this.userName + ":" + this.password).getBytes("UTF-8"));
-		
+
 		HttpGet get = new HttpGet(this.uri);
 		//Need to multiply by 1000 because timeouts are in milliseconds.
 		int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
@@ -85,7 +88,7 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 					gotDownloadURLOK = true;
 					// Call downloadData of FileRetriever to perform a "normal" download, now that the special URL has been set.
 					break;
-					
+
 					default:
 					logger.error("Non-200 status code: {} Response String is: {}", statusCode, responseString);
 					gotDownloadURLOK = false;
@@ -104,19 +107,27 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		}
 		return gotDownloadURLOK;
 	}
-	
+
 	@Override
-	protected void downloadData() throws UnsupportedEncodingException, Exception
+	protected void downloadData() throws DataRetrievalException
 	{
-		boolean updatedCOSMICURLOK = this.retrieveAndSetCOSMICDownloadURL();
-		if (updatedCOSMICURLOK)
+		boolean updatedCOSMICURLOK = false;
+		try
 		{
-			super.downloadData();
+			updatedCOSMICURLOK = this.retrieveAndSetCOSMICDownloadURL();
+			if (updatedCOSMICURLOK)
+			{
+				super.downloadData();
+			}
+			else
+			{
+				logger.warn("The COSMIC Download URL was not updated successfully, so file download was not attempted.");
+			}
 		}
-		else
+		catch (UnsupportedEncodingException e)
 		{
-			logger.warn("The COSMIC Download URL was not updated successfully, so file download was not attempted.");
+			throw new DataRetrievalException("An exception occurred while retrieving data: " + e.getMessage(), e);
 		}
 	}
-	
+
 }
