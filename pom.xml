@@ -4,7 +4,7 @@
 
 	<groupId>org.reactome.release</groupId>
 	<artifactId>release-common-lib</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -51,7 +51,7 @@
 		<commons.net.version>3.7.2</commons.net.version>
 		<hamcrest.version>2.1</hamcrest.version>
 		<httpclient.version>4.5.13</httpclient.version>
-		<log4j.version>2.11.0</log4j.version>
+		<log4j.version>2.16.0</log4j.version>
 		<javax.json.version>1.1.4</javax.json.version>
 		<junit.version>5.1.0</junit.version>
 		<junit.platform.version>1.1.0</junit.platform.version>
