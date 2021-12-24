@@ -4,7 +4,7 @@
 
 	<groupId>org.reactome.release</groupId>
 	<artifactId>release-common-lib</artifactId>
-	<version>1.2.3</version>
+	<version>1.2.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -26,9 +26,11 @@
 	<developers>
 		<developer>
 			<name>Solomon Shorser</name>
-			<email>solomon.shorser@oicr.on.ca</email>
 			<organization>Ontario Institute for Cancer Research</organization>
 			<organizationUrl>https://oicr.on.ca</organizationUrl>
+			<roles>
+				<role>Alumni</role>
+			</roles>
 		</developer>
 
 		<developer>
@@ -48,15 +50,15 @@
 
 	<properties>
 		<!-- dependencies -->
-		<commons.net.version>3.7.2</commons.net.version>
-		<hamcrest.version>2.1</hamcrest.version>
+		<commons.net.version>3.8.0</commons.net.version>
+		<hamcrest.version>2.2</hamcrest.version>
 		<httpclient.version>4.5.13</httpclient.version>
-		<log4j.version>2.16.0</log4j.version>
+		<log4j.version>2.17.0</log4j.version>
 		<javax.json.version>1.1.4</javax.json.version>
-		<junit.version>5.1.0</junit.version>
-		<junit.platform.version>1.1.0</junit.platform.version>
-		<mockito.version>3.6.0</mockito.version>
-		<reactome.base.version>1.2.23-SNAPSHOT</reactome.base.version>
+		<junit.version>5.8.2</junit.version>
+		<junit.platform.version>1.8.2</junit.platform.version>
+		<mockito.version>3.12.4</mockito.version>
+		<reactome.base.core.version>1.0.0-SNAPSHOT</reactome.base.core.version>
 
 		<!-- build -->
 		<jdk.version>1.8</jdk.version>
@@ -64,10 +66,10 @@
 
 		<!-- maven build and plugins -->
 		<maven.compiler.version>3.8.1</maven.compiler.version>
-		<maven.gpg.version>1.6</maven.gpg.version>
-		<maven.javadoc.version>3.0.0</maven.javadoc.version>
+		<maven.gpg.version>3.0.1</maven.gpg.version>
+		<maven.javadoc.version>3.3.1</maven.javadoc.version>
 		<maven.release.version>2.5.3</maven.release.version>
-		<maven.source.version>3.0.1</maven.source.version>
+		<maven.source.version>3.2.1</maven.source.version>
 		<maven.surefire.version>2.22.2</maven.surefire.version>
 		<maven.tidy.version>1.1.0</maven.tidy.version>
 		<nexus-staging-maven-plugin>1.6.8</nexus-staging-maven-plugin>
@@ -77,20 +79,14 @@
 		<!-- Main dependencies -->
 		<dependency>
 			<groupId>org.reactome.base</groupId>
-			<artifactId>reactome-base</artifactId>
-			<version>${reactome.base.version}</version>
+			<artifactId>reactome-base-core</artifactId>
+			<version>${reactome.base.core.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
 			<version>${log4j.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>${httpclient.version}</version>
 		</dependency>
 
 		<dependency>
@@ -103,6 +99,12 @@
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.json</artifactId>
 			<version>${javax.json.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.5</version>
 		</dependency>
 
 		<dependency>
@@ -238,6 +240,10 @@
 						<goals>
 							<goal>sign</goal>
 						</goals>
+						<configuration>
+							<keyname>${gpg.key}</keyname>
+							<passphraseServerId>${gpg.key}</passphraseServerId>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

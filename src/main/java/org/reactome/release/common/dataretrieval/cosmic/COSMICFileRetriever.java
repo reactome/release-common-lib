@@ -5,21 +5,13 @@ import org.reactome.release.common.dataretrieval.AuthenticatableFileRetriever;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.Base64;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 
 /**
  * Get COSMIC data file.
@@ -45,8 +37,7 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		super();
 	}
 	
-	private boolean retrieveAndSetCOSMICDownloadURL() throws UnsupportedEncodingException
-	{
+	private boolean retrieveAndSetCOSMICDownloadURL() throws IOException {
 		boolean gotDownloadURLOK = false;
 		// The NEW process to download from COSMIC requires a few steps.
 		// 1) Generate a base64-encoded string of the username and password.
@@ -55,26 +46,29 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		
 		// Encoded string.
 		String encodedUsernamePassword = Base64.getEncoder().encodeToString((this.userName + ":" + this.password).getBytes("UTF-8"));
-		
-		HttpGet get = new HttpGet(this.uri);
+
+		HttpURLConnection urlConnection = (HttpURLConnection) this.uri.toURL().openConnection();
 		//Need to multiply by 1000 because timeouts are in milliseconds.
 		int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
-		RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT)
-											.setConnectTimeout(delayInMilliseconds)
-											.setSocketTimeout(delayInMilliseconds)
-											.setConnectionRequestTimeout(delayInMilliseconds).build();
-		get.setConfig(config);
-		get.setHeader("Authorization", "Basic "+encodedUsernamePassword);
+		urlConnection.setConnectTimeout(delayInMilliseconds);
+		urlConnection.setReadTimeout(delayInMilliseconds);
+		urlConnection.setRequestProperty("Authorization", "Basic "+encodedUsernamePassword);
+		//HttpGet get = new HttpGet(this.uri);
+
+//		RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT)
+//											.setConnectTimeout(delayInMilliseconds)
+//											.setSocketTimeout(delayInMilliseconds)
+//											.setConnectionRequestTimeout(delayInMilliseconds).build();
+//		get.setConfig(config);
+//		get.setHeader("Authorization", "Basic "+encodedUsernamePassword);
 		String downloadURL = null;
-		try( CloseableHttpClient client = HttpClients.createDefault();
-				CloseableHttpResponse response = client.execute(get) )
-		{
-				int statusCode = response.getStatusLine().getStatusCode();
-				String responseString = EntityUtils.toString(response.getEntity());
+		try {
+				int statusCode = urlConnection.getResponseCode();
+				String responseString = urlConnection.getResponseMessage();
 				// If status code was not 200, we should print something so that the users know that an unexpected response was received.
 				switch (statusCode)
 				{
-					case HttpStatus.SC_OK:
+					case HttpURLConnection.HTTP_OK:
 					// Now we need to turn parse the JSON in responseString and extract the URL to download from.
 					JsonReader reader = Json.createReader(new StringReader(responseString));
 					JsonObject responseObject = reader.readObject();
