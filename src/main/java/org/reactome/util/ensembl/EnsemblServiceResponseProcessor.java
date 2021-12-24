@@ -1,19 +1,18 @@
 package org.reactome.util.ensembl;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.ParseException;
-import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +34,7 @@ public final class EnsemblServiceResponseProcessor
 
 	/**
 	 * Constructs a new EnsemblServiceResponseProcessor object with the specified logger
-	 * to record information about HttpResponse objects from the EnsEMBL service
+	 * to record information about responses from the EnsEMBL service
 	 * @param logger Logger object to record information about processed responses
 	 */
 	public EnsemblServiceResponseProcessor(Logger logger)
@@ -50,7 +49,7 @@ public final class EnsemblServiceResponseProcessor
 
 	/**
 	 * Constructs a new EnsemblServiceResponseProcessor object with a default logger
-	 * to record information about HttpResponse objects from the EnsEMBL service
+	 * to record information about responses from the EnsEMBL service
 	 */
 	public EnsemblServiceResponseProcessor()
 	{
@@ -60,30 +59,15 @@ public final class EnsemblServiceResponseProcessor
 	/**
 	 * Processes the HttpResponse from the queried EnsEMBL service, logs relevant information for the end-user, and
 	 * returns the important information of the response as an EnsemblServiceResult object
-	 * @param response HttpResponse from the EnsEMBL service
-	 * @param originalURI The URI of the EnsEMBL service queried (e.g rest.ensembl.org or rest.ensemblgenomes.org)
+	 * @param urlConnection URLConnection from the EnsEMBL service
 	 * @return EnsemblServiceResult object containing the relevant information from the response
-	 * @deprecated use {@link #processResponse(HttpResponse) instead}
+	 * @throws IOException
 	 */
-	@Deprecated
-	public EnsemblServiceResult processResponse(HttpResponse response, URI originalURI)
-	{
-		return processResponse(response);
-	}
-
-	/**
-	 * Processes the HttpResponse from the queried EnsEMBL service, logs relevant information for the end-user, and
-	 * returns the important information of the response as an EnsemblServiceResult object
-	 * @param response HttpResponse from the EnsEMBL service
-	 * @return EnsemblServiceResult object containing the relevant information from the response
-	 */
-	public EnsemblServiceResult processResponse(HttpResponse response)
-	{
-		EnsemblServiceResult result = response.containsHeader("Retry-After") ?
-			processResponseWithRetryAfter(response) :
-			processResponseWhenNotOverQueryQuota(response);
-
-		processXRateLimitRemaining(response);
+	public EnsemblServiceResult processResponse(HttpURLConnection urlConnection) throws IOException {
+		EnsemblServiceResult result = urlConnection.getHeaderFields().get("Retry-After") != null ?
+			processResponseWithRetryAfter(urlConnection) :
+			processResponseWhenNotOverQueryQuota(urlConnection);
+		processXRateLimitRemaining(urlConnection);
 
 		return result;
 	}
@@ -136,7 +120,7 @@ public final class EnsemblServiceResponseProcessor
 	}
 
 	/**
-	 * Process the query's response object when the response contains the header "Retry-After" which is most likely
+	 * Process the query's URLConnection object when the response contains the header "Retry-After" which is most likely
 	 * to happen if too many requests are sent in a fixed time, using up our quota with the service resulting in a
 	 * need to wait before more requests can be sent.
 	 *
@@ -145,20 +129,18 @@ public final class EnsemblServiceResponseProcessor
 	 * before retrying.
 	 *
 	 * The response's status message, reason phrase, and headers will also be logged for debugging.
-	 * @param response Response object to process
+	 * @param urlConnection urlConnection URLConnection from the EnsEMBL service
 	 * @return EnsemblServiceResult object with the response status, isOkToRetry, and wait time to retry set
 	 */
-	EnsemblServiceResult processResponseWithRetryAfter(HttpResponse response)
-	{
-		logger.debug("Response message: {} ; Reason code: {}; Headers: {}",
-			response.getStatusLine().toString(),
-			response.getStatusLine().getReasonPhrase(),
-			getHeaders(response)
+	EnsemblServiceResult processResponseWithRetryAfter(HttpURLConnection urlConnection) throws IOException {
+		logger.debug("Response message: {} ; Headers: {}",
+			urlConnection.getResponseMessage(),
+			getHeaders(urlConnection)
 		);
 
 		EnsemblServiceResult result = this.new EnsemblServiceResult();
-		result.setStatus(response.getStatusLine().getStatusCode());
-		result.setWaitTime(processWaitTime(response));
+		result.setStatus(urlConnection.getResponseCode());
+		result.setWaitTime(processWaitTime(urlConnection));
 		result.setOkToRetry(timesWaitedThresholdNotMet());
 
 		if (result.isOkToRetry())
@@ -170,21 +152,21 @@ public final class EnsemblServiceResponseProcessor
 	}
 
 	/**
-	 * Processes the query's response object when the response does not contain the header "Retry-After".  This method
-	 * will attempt to retrieve the content, and return it as the result value in an EnsemblServiceResult object.
+	 * Processes the query's URLConnection object when the response does not contain the header "Retry-After".  This
+	 * method will attempt to retrieve the content, and return it as the result value in an EnsemblServiceResult
+	 * object.
 	 *
 	 * Certain HTTP response error codes (e.g. 400, 404, 500, 504) will cause the error to be logged and a
 	 * EnsemblServiceResult object without content set in the result value to be returned.
-	 * @param response Response object to process
+	 * @param urlConnection HttpURLConnection from the EnsEMBL service
 	 * @return EnsemblServiceResult object with the content set as its result value if the content was obtained
 	 */
-	EnsemblServiceResult processResponseWhenNotOverQueryQuota(HttpResponse response)
-	{
+	EnsemblServiceResult processResponseWhenNotOverQueryQuota(HttpURLConnection urlConnection) throws IOException {
 		EnsemblServiceResult result = this.new EnsemblServiceResult();
-		result.setStatus(response.getStatusLine().getStatusCode());
-		switch (response.getStatusLine().getStatusCode())
+		result.setStatus(urlConnection.getResponseCode());
+		switch (urlConnection.getResponseCode())
 		{
-			case HttpStatus.SC_GATEWAY_TIMEOUT:
+			case HttpURLConnection.HTTP_GATEWAY_TIMEOUT:
 				logger.error("Request timed out! {} retries remaining", timeoutRetriesRemaining);
 
 				timeoutRetriesRemaining--;
@@ -198,28 +180,27 @@ public final class EnsemblServiceResponseProcessor
 					initializeTimeoutRetriesRemaining();
 				}
 				break;
-			case HttpStatus.SC_OK:
-				result.setResult(parseContent(response));
+			case HttpURLConnection.HTTP_OK:
+				result.setResult(parseContent(urlConnection));
 				break;
-			case HttpStatus.SC_NOT_FOUND:
+			case HttpURLConnection.HTTP_NOT_FOUND:
 				logger.error("Response code 404 ('Not found') received: {}",
-					response.getStatusLine().getReasonPhrase()
+					urlConnection.getResponseMessage()
 				);
 				// If we got 404, don't retry.
 				break;
-			case HttpStatus.SC_INTERNAL_SERVER_ERROR:
-				logger.error("Error 500 detected! Message: {}",response.getStatusLine().getReasonPhrase());
+			case HttpURLConnection.HTTP_INTERNAL_ERROR:
+				logger.error("Error 500 detected! Message: {}", urlConnection.getResponseMessage());
 				// If we get 500 error then we should just get  out of here. Maybe throw an exception?
 				break;
-			case HttpStatus.SC_BAD_REQUEST:
-				logger.trace("Response code was 400 ('Bad request'). Message from server: {}", parseContent(response));
+			case HttpURLConnection.HTTP_BAD_REQUEST:
+				logger.trace("Response code was 400 ('Bad request'). Message from server: {}", parseContent(urlConnection));
 				break;
 			default:
 				// Log any other kind of response.
-				result.setResult(parseContent(response));
-				logger.info("Unexpected response {} with message: {}",
-					response.getStatusLine().getStatusCode(),
-					response.getStatusLine().getReasonPhrase()
+				result.setResult(parseContent(urlConnection));
+				logger.info("Unexpected response: {}",
+					urlConnection.getResponseMessage()
 				);
 				break;
 		}
@@ -232,17 +213,16 @@ public final class EnsemblServiceResponseProcessor
 	 * "X-RateLimit-Remaining".
 	 *
 	 * The number of requests remaining will be logged for debugging if it is a multiple of 1000.  If no
-	 * "X-RateLimit-Remaining" header is found in the response object, its absence will be logged along with
+	 * "X-RateLimit-Remaining" header is found in the URLConnection, its absence will be logged along with
 	 * the HTTP response code received, the response headers received, and the last known number of requests
 	 * remaining.
-	 * @param response Response object from which to obtain the number of requests remaining
+	 * @param urlConnection URLConnection from the EnsEMBL service
 	 */
-	void processXRateLimitRemaining(HttpResponse response)
-	{
-		if (response.containsHeader("X-RateLimit-Remaining"))
+	void processXRateLimitRemaining(HttpURLConnection urlConnection) throws IOException {
+		if (urlConnection.getHeaderFields().get("X-RateLimit-Remaining") != null)
 		{
 			EnsemblServiceResponseProcessor.numRequestsRemaining.set(
-				parseIntegerHeaderValue(response, "X-RateLimit-Remaining")
+				parseIntegerHeaderValue(urlConnection, "X-RateLimit-Remaining")
 			);
 			if (EnsemblServiceResponseProcessor.numRequestsRemaining.get() % 1000 == 0)
 			{
@@ -256,8 +236,8 @@ public final class EnsemblServiceResponseProcessor
 					"Headers returned are: {} " + System.lineSeparator() +
 					"Last known value for remaining was {}",
 
-				response.getStatusLine().toString(),
-				getHeaders(response),
+				urlConnection.getResponseMessage(),
+				getHeaders(urlConnection),
 				EnsemblServiceResponseProcessor.numRequestsRemaining
 			);
 		}
@@ -267,13 +247,13 @@ public final class EnsemblServiceResponseProcessor
 	 * Returns the duration to wait before retrying the query.  The wait time is determined from the "Retry-After"
 	 * header in the query response and is multiplied by the number of times the query has been requested to wait.
 	 * This is to give the increasing server buffer time on each failure requesting the query waits.
-	 * @param response Response object from which to obtain the base wait time
+	 * @param urlConnection URLConnection from the EnsEMBL service
 	 * @return Wait time as Duration object ("Retry-After" value multiplied by the number of times the query has
 	 * requested to wait).
 	 */
-	private Duration processWaitTime(HttpResponse response)
+	private Duration processWaitTime(HttpURLConnection urlConnection)
 	{
-		Duration waitTime = Duration.ofSeconds(parseIntegerHeaderValue(response,"Retry-After"));
+		Duration waitTime = Duration.ofSeconds(parseIntegerHeaderValue(urlConnection,"Retry-After"));
 
 		logger.warn("The server told us to wait, so we will wait for {} * {} before trying again.",
 			waitTime, getWaitMultiplier()
@@ -307,19 +287,21 @@ public final class EnsemblServiceResponseProcessor
 	}
 
 	/**
-	 * Parses and returns the content from the response object passed.  Content is parsed as UTF-8.  A stacktrace is
-	 * printed to STDERR and an empty String returned if an exception occurs during parsing of the response content.
-	 * @param response Response object to query for content
-	 * @return Content as String from the response object passed.  An empty String if an exception occurs during
+	 * Parses and returns the content from the URLConnection object passed.  Content is parsed as UTF-8.  A stacktrace
+	 * is printed to STDERR and an empty String returned if an exception occurs during parsing of the response content.
+	 * @param urlConnection URLConnection from the EnsEMBL service
+	 * @return Content as String from the URLConnection object passed.  An empty String if an exception occurs during
 	 * parsing of the content.
 	 */
-	private String parseContent(HttpResponse response)
+	private String parseContent(HttpURLConnection urlConnection)
 	{
 		try
 		{
-			return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+			return new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8))
+				.lines()
+				.collect(Collectors.joining(System.lineSeparator()));
 		}
-		catch (ParseException | IOException e)
+		catch (IOException e)
 		{
 			e.printStackTrace();
 			return "";
@@ -328,23 +310,28 @@ public final class EnsemblServiceResponseProcessor
 
 	/**
 	 * Returns the value of a header, which is an integer, as an integer.
-	 * @param response Response object to query for headers
+	 * @param urlConnection URLConnection from the EnsEMBL service
 	 * @param header Specific header for which to get the value (which should be an integer)
-	 * @return Integer value of the header passed for the response object passed
+	 * @return Integer value of the header passed for the URLConnection object passed
 	 */
-	private static int parseIntegerHeaderValue(HttpResponse response, String header) throws NumberFormatException
+	private static int parseIntegerHeaderValue(URLConnection urlConnection, String header) throws NumberFormatException
 	{
-		return Integer.parseInt(response.getHeaders(header)[0].getValue());
+		return Integer.parseInt(urlConnection.getHeaderFields().get(header).get(0));
 	}
 
 	/**
-	 * Returns the headers of the response object as a list of Strings
-	 * @param response Response object from which to get the headers
-	 * @return List of Strings representing the headers from the passed response object
+	 * Returns the headers of the URLConnection object as a list of Strings
+	 * @param urlConnection URLConnection from the EnsEMBL service
+	 * @return List of Strings representing the headers from the passed URLConnection object
 	 */
-	private List<String> getHeaders(HttpResponse response)
+	private List<String> getHeaders(URLConnection urlConnection)
 	{
-		return Arrays.stream(response.getAllHeaders()).map(Object::toString).collect(Collectors.toList());
+		List<String> headerNamesAndValues = new ArrayList<>();
+		for (String headerName : urlConnection.getHeaderFields().keySet()) {
+			String headerValues = urlConnection.getHeaderFields().get(headerName).stream().collect(Collectors.joining(", "));
+			headerNamesAndValues.add(headerName + ": " + headerValues);
+		}
+		return headerNamesAndValues;
 	}
 
 	/**
