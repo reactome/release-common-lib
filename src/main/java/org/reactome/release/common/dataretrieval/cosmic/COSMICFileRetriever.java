@@ -2,11 +2,10 @@ package org.reactome.release.common.dataretrieval.cosmic;
 
 import org.reactome.release.common.dataretrieval.AuthenticatableFileRetriever;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.*;
 import java.util.Base64;
+import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -53,37 +52,30 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		urlConnection.setConnectTimeout(delayInMilliseconds);
 		urlConnection.setReadTimeout(delayInMilliseconds);
 		urlConnection.setRequestProperty("Authorization", "Basic "+encodedUsernamePassword);
-		//HttpGet get = new HttpGet(this.uri);
 
-//		RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT)
-//											.setConnectTimeout(delayInMilliseconds)
-//											.setSocketTimeout(delayInMilliseconds)
-//											.setConnectionRequestTimeout(delayInMilliseconds).build();
-//		get.setConfig(config);
-//		get.setHeader("Authorization", "Basic "+encodedUsernamePassword);
 		String downloadURL = null;
 		try {
 				int statusCode = urlConnection.getResponseCode();
-				String responseString = urlConnection.getResponseMessage();
+				String content = getContent(urlConnection);
 				// If status code was not 200, we should print something so that the users know that an unexpected response was received.
 				switch (statusCode)
 				{
 					case HttpURLConnection.HTTP_OK:
-					// Now we need to turn parse the JSON in responseString and extract the URL to download from.
-					JsonReader reader = Json.createReader(new StringReader(responseString));
-					JsonObject responseObject = reader.readObject();
-					downloadURL = responseObject.get("url").toString().replaceAll("\"", "");
-					// Update this object's downloadURL to be the one that came back from the request
-					this.setDataURL(new URI(downloadURL));
-					logger.info("COSMIC download URL has been set.");
-					gotDownloadURLOK = true;
-					// Call downloadData of FileRetriever to perform a "normal" download, now that the special URL has been set.
-					break;
+						// Now we need to turn parse the JSON in responseString and extract the URL to download from.
+						JsonReader reader = Json.createReader(new StringReader(content));
+						JsonObject responseObject = reader.readObject();
+						downloadURL = responseObject.get("url").toString().replaceAll("\"", "");
+						// Update this object's downloadURL to be the one that came back from the request
+						this.setDataURL(new URI(downloadURL));
+						logger.info("COSMIC download URL has been set.");
+						gotDownloadURLOK = true;
+						// Call downloadData of FileRetriever to perform a "normal" download, now that the special URL has been set.
+						break;
 					
 					default:
-					logger.error("Non-200 status code: {} Response String is: {}", statusCode, responseString);
-					gotDownloadURLOK = false;
-					break;
+						logger.error("Non-200 response: {}", urlConnection.getResponseMessage());
+						gotDownloadURLOK = false;
+						break;
 				}
 		}
 		catch (IOException e)
@@ -112,5 +104,9 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 			logger.warn("The COSMIC Download URL was not updated successfully, so file download was not attempted.");
 		}
 	}
-	
+
+	private String getContent(HttpURLConnection urlConnection) throws IOException {
+		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+		return bufferedReader.lines().collect(Collectors.joining(System.lineSeparator()));
+	}
 }

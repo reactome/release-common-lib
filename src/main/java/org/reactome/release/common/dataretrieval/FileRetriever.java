@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
@@ -128,12 +129,12 @@ public class FileRetriever implements DataRetriever {
 		catch (URISyntaxException e)
 		{
 			logger.error("Error creating download destination: " + this.destination, e);
-			e.printStackTrace();
+			throw e;
 		}
 		catch (IOException e)
 		{
 			logger.error("Unable to create parent directory of download destination: " + path.toString(), e);
-			e.printStackTrace();
+			throw e;
 		}
 		catch (Exception e)
 		{
@@ -144,12 +145,12 @@ public class FileRetriever implements DataRetriever {
 
 	}
 
-	protected void doFtpDownload() throws SocketException, IOException, FileNotFoundException, Exception
+	protected void doFtpDownload() throws Exception
 	{
 		doFtpDownload(null, null);
 	}
 	
-	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, Exception
+	protected void doFtpDownload(String user, String password) throws Exception
 	{
 		// user is "anonymous" if provided username is null/empty
 		if (user == null || user.trim().equals(""))
@@ -223,31 +224,23 @@ public class FileRetriever implements DataRetriever {
 			}
 		}
 	}
-	
+
 	protected void doHttpDownload(Path path) throws Exception, IOException
 	{
-
-		HttpURLConnection urlConnection = (HttpURLConnection) this.uri.toURL().openConnection();
-		//Need to multiply by 1000 because timeouts are in milliseconds.
-		int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
-		urlConnection.setConnectTimeout(delayInMilliseconds);
-		urlConnection.setReadTimeout(delayInMilliseconds);
-
-		//HttpGet get = new HttpGet(this.uri);
-		//Need to multiply by 1000 because timeouts are in milliseconds.
-		//RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT)
-		//									.setConnectTimeout(1000 * (int)this.timeout.getSeconds())
-		//									.setSocketTimeout(1000 * (int)this.timeout.getSeconds())
-		//									.setConnectionRequestTimeout(1000 * (int)this.timeout.getSeconds()).build();
-		
-		//get.setConfig(config);
-		
 		int retries = this.numRetries;
 		boolean done = retries + 1 <= 0;
 		while(!done)
 		{
 			try
 			{
+				HttpURLConnection urlConnection = getHttpURLConnection();
+
+				//Need to multiply by 1000 because timeouts are in milliseconds.
+				int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
+				urlConnection.setConnectTimeout(delayInMilliseconds);
+
+				urlConnection.setReadTimeout(delayInMilliseconds);
+
 				int statusCode = urlConnection.getResponseCode();
 				// If status code was not 200, we should print something so that the users know that an unexpected response was received.
 				if (statusCode != HttpURLConnection.HTTP_OK)
@@ -262,7 +255,7 @@ public class FileRetriever implements DataRetriever {
 					}
 				}
 
-				Files.copy(urlConnection.getInputStream(), path);
+				Files.copy(urlConnection.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 				done = true;
 			}
 			catch (SocketTimeoutException e)
@@ -284,6 +277,10 @@ public class FileRetriever implements DataRetriever {
 				throw e;
 			}
 		}
+	}
+
+	protected HttpURLConnection getHttpURLConnection() throws IOException {
+		return (HttpURLConnection) this.uri.toURL().openConnection();
 	}
 
 	public Duration getMaxAge()
@@ -348,4 +345,3 @@ public class FileRetriever implements DataRetriever {
 	}
 	
 }
-
