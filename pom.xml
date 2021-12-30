@@ -268,6 +268,27 @@
 				<version>${maven.surefire.version}</version>
 			</plugin>
 
+			<!-- executes IT tests -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.15</version>
+				<executions>
+					<execution>
+						<id>integration-test</id>
+						<goals>
+							<goal>integration-test</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>verify</id>
+						<goals>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 			<!-- allows 'mvn release' command to create a new release of the project https://maven.apache.org/maven-release/maven-release-plugin/ -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
