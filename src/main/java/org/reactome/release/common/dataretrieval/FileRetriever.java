@@ -9,12 +9,17 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.stream.Collectors;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 public class FileRetriever implements DataRetriever {
 
@@ -107,15 +112,13 @@ public class FileRetriever implements DataRetriever {
 	protected void downloadData() throws Exception
 	{
 		logger.trace("Scheme is: {}", this.uri.getScheme());
-		Path path = null;
+
 		try
 		{
-			path = Paths.get(this.destination);
-			Files.createDirectories(path.getParent());
+			createFileParentDirectory();
 			if (this.uri.getScheme().equals("http") || this.uri.getScheme().equals("https"))
 			{
-				
-				doHttpDownload(path);
+				doHttpDownload(getFilePath());
 			}
 			else if (this.uri.getScheme().equals("ftp") || this.uri.getScheme().equals("sftp"))
 			{
@@ -133,7 +136,7 @@ public class FileRetriever implements DataRetriever {
 		}
 		catch (IOException e)
 		{
-			logger.error("Unable to create parent directory of download destination: " + path.toString(), e);
+			logger.error("Unable to create parent directory of download destination: " + getFilePath().toString(), e);
 			throw e;
 		}
 		catch (Exception e)
@@ -225,7 +228,11 @@ public class FileRetriever implements DataRetriever {
 		}
 	}
 
-	protected void doHttpDownload(Path path) throws Exception, IOException
+	protected void doHttpDownload(Path path) throws Exception {
+		doHttpDownload(path, getHttpURLConnection());
+	}
+
+	protected void doHttpDownload(Path path, HttpURLConnection urlConnection) throws Exception
 	{
 		int retries = this.numRetries;
 		boolean done = retries + 1 <= 0;
@@ -233,29 +240,9 @@ public class FileRetriever implements DataRetriever {
 		{
 			try
 			{
-				HttpURLConnection urlConnection = getHttpURLConnection();
+				logResponseIfStatusNotOkay(urlConnection);
+				saveContentsToFile(urlConnection, path);
 
-				//Need to multiply by 1000 because timeouts are in milliseconds.
-				int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
-				urlConnection.setConnectTimeout(delayInMilliseconds);
-
-				urlConnection.setReadTimeout(delayInMilliseconds);
-
-				int statusCode = urlConnection.getResponseCode();
-				// If status code was not 200, we should print something so that the users know that an unexpected response was received.
-				if (statusCode != HttpURLConnection.HTTP_OK)
-				{
-					if (String.valueOf(statusCode).startsWith("4") || String.valueOf(statusCode).startsWith("5"))
-					{
-						logger.error("Response code was 4xx/5xx: {}, Status line is: {}", statusCode, urlConnection.getResponseMessage());
-					}
-					else
-					{
-						logger.warn("Response was not \"200\". It was: {}", urlConnection.getResponseMessage());
-					}
-				}
-
-				Files.copy(urlConnection.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 				done = true;
 			}
 			catch (SocketTimeoutException e)
@@ -263,7 +250,7 @@ public class FileRetriever implements DataRetriever {
 				// we will only be retrying the connection timeouts, defined as the time required to establish a connection.
 				// we will not handle socket timeouts (inactivity that occurs after the connection has been established).
 				// we will not handle connection manager timeouts (time waiting for connection manager or connection pool).
-				e.printStackTrace();
+				//e.printStackTrace();
 				logger.info("Failed due to ConnectTimeout, but will retry {} more time(s).", retries);
 				retries--;
 				done = retries + 1 <= 0;
@@ -279,28 +266,65 @@ public class FileRetriever implements DataRetriever {
 		}
 	}
 
+	protected void logResponseIfStatusNotOkay(HttpURLConnection urlConnection) throws IOException {
+		int statusCode = urlConnection.getResponseCode();
+		String statusMessage = urlConnection.getResponseMessage();
+
+		// If status code was not 200, we should print something so that the users know that an unexpected response was received.
+		if (statusCode != HttpURLConnection.HTTP_OK){
+			if (String.valueOf(statusCode).startsWith("4") || String.valueOf(statusCode).startsWith("5"))
+			{
+				logger.error("Response code was 4xx/5xx: {}, Status line is: {}", statusCode, statusMessage);
+			}
+			else
+			{
+				logger.warn("Response was not \"200\". It was: {}", statusMessage);
+			}
+		}
+	}
+
+	protected void saveContentsToFile(HttpURLConnection urlConnection, Path path) throws IOException {
+		Files.copy(urlConnection.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+	}
+
 	protected HttpURLConnection getHttpURLConnection() throws IOException {
-		return (HttpURLConnection) this.uri.toURL().openConnection();
+		int timeoutInMilliSeconds = (int) this.getTimeout().toMillis();
+		HttpURLConnection urlConnection = (HttpURLConnection) this.uri.toURL().openConnection();
+		urlConnection.setConnectTimeout(timeoutInMilliSeconds);
+		urlConnection.setReadTimeout(timeoutInMilliSeconds);
+		return urlConnection;
+	}
+
+	protected String getContentForHttp() throws IOException {
+		return getContentForHttp(getHttpURLConnection());
+	}
+
+	protected JsonObject fetchJSONResponse() throws IOException {
+		return fetchJSONResponse(getHttpURLConnection());
+	}
+
+	protected String getContentForHttp(HttpURLConnection urlConnection) throws IOException {
+		BufferedReader bufferedReader =
+			new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+		return bufferedReader.lines().collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	protected JsonObject fetchJSONResponse(HttpURLConnection urlConnection) throws IOException {
+		JsonReader reader = Json.createReader(new StringReader(getContentForHttp(urlConnection)));
+		return reader.readObject();
+	}
+
+	protected Path getFilePath() {
+		return Paths.get(this.destination);
+	}
+
+	protected void createFileParentDirectory() throws IOException {
+		Files.createDirectories(getFilePath().getParent());
 	}
 
 	public Duration getMaxAge()
 	{
 		return this.maxAge;
-	}
-	
-	public URI getDataURL()
-	{
-		return this.uri;
-	}
-	
-	@Override
-	public void setDataURL(URI uri) {
-		this.uri = uri;
-	}
-
-	@Override
-	public void setFetchDestination(String destination) {
-		this.destination = destination;
 	}
 
 	@Override
@@ -308,14 +332,47 @@ public class FileRetriever implements DataRetriever {
 		this.maxAge = age;
 	}
 
+	public URI getDataURL()
+	{
+		return this.uri;
+	}
+
+	@Override
+	public void setDataURL(URI uri) {
+		this.uri = uri;
+	}
+
+	public String getFetchDestination() {
+		return this.destination;
+	}
+
+	@Override
+	public void setFetchDestination(String destination) {
+		this.destination = destination;
+	}
+
+	public int getNumRetries()
+	{
+		return this.numRetries;
+	}
+
 	public void setNumRetries(int i)
 	{
 		this.numRetries = i;
 	}
-	
+
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
 	public void setTimeout(Duration timeout)
 	{
 		this.timeout = timeout;
+	}
+
+	public String getRetrieverName()
+	{
+		return this.retrieverName;
 	}
 
 	@Override
@@ -323,25 +380,14 @@ public class FileRetriever implements DataRetriever {
 	{
 		this.retrieverName = retrieverName;
 	}
-	
-	public String getRetrieverName()
-	{
-		return this.retrieverName;
-	}
-	
-	public void setPassiveFTP(boolean passiveMode)
-	{
-		this.passiveFTP = passiveMode;
-	}
-	
+
 	public boolean isPassiveFTP()
 	{
 		return this.passiveFTP ;
 	}
 
-	public int getNumRetries()
+	public void setPassiveFTP(boolean passiveMode)
 	{
-		return this.numRetries;
+		this.passiveFTP = passiveMode;
 	}
-	
 }

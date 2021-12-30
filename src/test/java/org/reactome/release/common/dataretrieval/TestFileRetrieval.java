@@ -10,9 +10,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -164,7 +167,6 @@ public class TestFileRetrieval {
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
 				assertTrue(e.getMessage().contains("500 ERROR"));
 			}
 		}
@@ -189,7 +191,7 @@ public class TestFileRetrieval {
 		try
 		{
 			Mockito.doThrow(new SocketTimeoutException("Dummy text"))
-				.when(retriever).getHttpURLConnection();
+				.when(retriever).saveContentsToFile(Mockito.any(HttpURLConnection.class), Mockito.any(Path.class));
 			retriever.fetchData();
 
 			// Test fails here since an fetch data should throw an exception going to the catch block
@@ -198,7 +200,6 @@ public class TestFileRetrieval {
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
 			assertTrue(e.getMessage().contains("No further attempts will be made"));
 		}
 	}
@@ -208,7 +209,7 @@ public class TestFileRetrieval {
 	 * @throws Exception
 	 */
 	@Test
-	public void testHttpRetry() throws Exception
+	public void testHttpRetry() throws URISyntaxException
 	{
 		FileRetriever retriever = Mockito.spy(FileRetriever.class);
 		//retrieve google - it should be pretty easy.
@@ -222,7 +223,7 @@ public class TestFileRetrieval {
 		try
 		{
 			Mockito.doThrow(new SocketTimeoutException("Dummy text"))
-				.when(retriever).getHttpURLConnection();
+				.when(retriever).saveContentsToFile(Mockito.any(HttpURLConnection.class), Mockito.any(Path.class));
 			retriever.fetchData();
 
 			// Test fails here since an fetch data should throw an exception going to the catch block
@@ -231,7 +232,6 @@ public class TestFileRetrieval {
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
 			assertTrue(e.getMessage().contains("Connection timed out. Number of retries (1) exceeded. No further attempts will be made."));
 		}
 	}
