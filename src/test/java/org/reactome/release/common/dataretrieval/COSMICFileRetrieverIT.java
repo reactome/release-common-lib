@@ -17,8 +17,6 @@ import org.reactome.release.common.dataretrieval.cosmic.COSMICFileRetriever;
 
 public class COSMICFileRetrieverIT
 {
-
-	
 	@Test
 	public void testGetCOSMICData() throws URISyntaxException, FileNotFoundException, IOException
 	{

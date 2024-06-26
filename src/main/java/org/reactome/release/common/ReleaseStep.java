@@ -6,6 +6,7 @@ import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gk.persistence.MySQLAdaptor;
+import org.reactome.util.general.DBUtils;
 
 /**
  * This class provides the framework for a release step in Reactome's data-release-pipeline
@@ -24,6 +25,8 @@ public abstract class ReleaseStep
 	 */
 	protected boolean testMode;
 
+
+
 	/**
 	 * Parses a Properties object to obtain database connection information and return a database adaptor as a
 	 * MySQLAdaptor object.
@@ -35,16 +38,8 @@ public abstract class ReleaseStep
 	 * @return Database adaptor as a MySQLAdaptor object
 	 * @throws SQLException Thrown if unable to create a MySQLAdaptor object to return
 	 */
-	protected static MySQLAdaptor getMySQLAdaptorFromProperties(Properties props) throws SQLException
-	{
-
-		String dbHost = props.getProperty("db.host", "localhost");
-		String dbUser = props.getProperty("db.user");
-		String dbPassword = props.getProperty("db.password");
-		String dbName = props.getProperty("db.name");
-		int dbPort = Integer.parseInt(props.getProperty("db.port", "3306"));
-
-		return new MySQLAdaptor(dbHost, dbName, dbUser, dbPassword, dbPort);
+	protected static MySQLAdaptor getMySQLAdaptorFromProperties(Properties props) throws SQLException {
+		return DBUtils.getDbAdaptor("db", props);
 	}
 
 	/**

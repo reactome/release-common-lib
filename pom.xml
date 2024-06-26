@@ -4,12 +4,18 @@
 
 	<groupId>org.reactome.release</groupId>
 	<artifactId>release-common-lib</artifactId>
-	<version>1.2.2</version>
+	<version>2.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>Release Common Library</name>
+	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Common components used throughout the Release process.</description>
-	<url>https://reactome.org</url>
+	<url>https://github.com/reactome/release-common-lib</url>
+
+	<organization>
+		<name>Reactome</name>
+		<url>https://reactome.org</url>
+	</organization>
+
 	<licenses>
 		<license>
 			<name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
@@ -20,15 +26,18 @@
 	<developers>
 		<developer>
 			<name>Solomon Shorser</name>
-			<email>solomon.shorser@oicr.on.ca</email>
-			<organization>Reactome</organization>
-			<organizationUrl>https://reactome.org</organizationUrl>
+			<organization>Ontario Institute for Cancer Research</organization>
+			<organizationUrl>https://oicr.on.ca</organizationUrl>
+			<roles>
+				<role>Alumni</role>
+			</roles>
 		</developer>
+
 		<developer>
 			<name>Joel Weiser</name>
 			<email>joel.weiser@oicr.on.ca</email>
-			<organization>Reactome</organization>
-			<organizationUrl>https://reactome.org</organizationUrl>
+			<organization>Ontario Institute for Cancer Research</organization>
+			<organizationUrl>https://oicr.on.ca</organizationUrl>
 		</developer>
 	</developers>
 
@@ -38,59 +47,72 @@
 		<url>https://github.com/reactome/release-common-lib</url>
 		<tag>develop</tag>
 	</scm>
-	<!-- defines repositories that releases and snapshots are deployed -->
-	<distributionManagement>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-		</repository>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
 
 	<properties>
+		<!-- dependencies -->
+		<commons.net.version>3.8.0</commons.net.version>
+		<hamcrest.version>2.2</hamcrest.version>
+		<httpclient.version>4.5.13</httpclient.version>
+		<log4j.version>2.17.0</log4j.version>
+		<javax.json.version>1.1.4</javax.json.version>
+		<junit.version>5.8.2</junit.version>
+		<junit.platform.version>1.8.2</junit.platform.version>
+		<mockito.version>3.12.4</mockito.version>
+		<reactome.base.core.version>1.0.0-SNAPSHOT</reactome.base.core.version>
+
+		<!-- build -->
+		<jdk.version>1.8</jdk.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<hamcrest.version>2.1</hamcrest.version>
-		<junit.version>5.1.0</junit.version>
-		<junit.platform.version>1.1.0</junit.platform.version>
-		<mockito.version>3.6.0</mockito.version>
+		<!-- maven build and plugins -->
+		<maven.compiler.version>3.8.1</maven.compiler.version>
+		<maven.gpg.version>3.0.1</maven.gpg.version>
+		<maven.javadoc.version>3.3.1</maven.javadoc.version>
+		<maven.release.version>2.5.3</maven.release.version>
+		<maven.source.version>3.2.1</maven.source.version>
+		<maven.surefire.version>2.22.2</maven.surefire.version>
+		<maven.tidy.version>1.1.0</maven.tidy.version>
+		<nexus-staging-maven-plugin>1.6.8</nexus-staging-maven-plugin>
 	</properties>
 
 	<dependencies>
 		<!-- Main dependencies -->
 		<dependency>
 			<groupId>org.reactome.base</groupId>
-			<artifactId>reactome-base</artifactId>
-			<version>1.2.23-SNAPSHOT</version>
+			<artifactId>reactome-base-core</artifactId>
+			<version>${reactome.base.core.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.11.0</version>
+			<version>${log4j.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>4.5.13</version>
-		</dependency>
+
 		<dependency>
 			<groupId>javax.json</groupId>
 			<artifactId>javax.json-api</artifactId>
-			<version>1.1.4</version>
+			<version>${javax.json.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.json</artifactId>
-			<version>1.1.4</version>
+			<version>${javax.json.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.5</version>
+		</dependency>
+
 		<dependency>
 			<groupId>commons-net</groupId>
 			<artifactId>commons-net</artifactId>
-			<version>3.7.2</version>
+			<version>${commons.net.version}</version>
 		</dependency>
+
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.hamcrest</groupId>
@@ -98,42 +120,49 @@
 			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.vintage</groupId>
 			<artifactId>junit-vintage-engine</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-launcher</artifactId>
 			<version>${junit.platform.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-runner</artifactId>
 			<version>${junit.platform.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-inline</artifactId>
 			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>
@@ -162,10 +191,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>${maven.compiler.version}</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
 				</configuration>
 			</plugin>
 
@@ -173,7 +202,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>${maven.javadoc.version}</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -188,7 +217,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>${maven.source.version}</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -203,7 +232,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
-				<version>1.6</version>
+				<version>${maven.gpg.version}</version>
 				<executions>
 					<execution>
 						<id>sign-artifacts</id>
@@ -211,6 +240,10 @@
 						<goals>
 							<goal>sign</goal>
 						</goals>
+						<configuration>
+							<keyname>${gpg.key}</keyname>
+							<passphraseServerId>${gpg.key}</passphraseServerId>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -219,7 +252,7 @@
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.8</version>
+				<version>${nexus-staging-maven-plugin}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<serverId>ossrh</serverId>
@@ -232,17 +265,35 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.2</version>
+				<version>${maven.surefire.version}</version>
 			</plugin>
 
-			<!--
-			allows 'mvn release' command to create a new release of the project
-            https://maven.apache.org/maven-release/maven-release-plugin/
-			-->
+			<!-- executes IT tests -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.15</version>
+				<executions>
+					<execution>
+						<id>integration-test</id>
+						<goals>
+							<goal>integration-test</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>verify</id>
+						<goals>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- allows 'mvn release' command to create a new release of the project https://maven.apache.org/maven-release/maven-release-plugin/ -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>2.5.3</version>
+				<version>${maven.release.version}</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<useReleaseProfile>false</useReleaseProfile>
@@ -251,25 +302,18 @@
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 				</configuration>
 			</plugin>
-
-			<!--
-			checks the POM file has the order specified by the POM Code Convention
-			http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention
-			-->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>tidy-maven-plugin</artifactId>
-				<version>1.1.0</version>
-				<executions>
-					<execution>
-						<id>validate</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
+
+	<!-- defines repositories that releases and snapshots are deployed -->
+	<distributionManagement>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
