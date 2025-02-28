@@ -29,7 +29,7 @@ public class COSMICFileRetrieverIT
 		retriever.setPassword(props.getProperty("password"));
 		
 		// classification.csv is a pretty small file, ~2MB I think, so a good choice for testing downloads.
-		retriever.setDataURL(new URI("https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v92/classification.csv"));
+		retriever.setDataURL(new URI("https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v99/classification.csv"));
 		retriever.setMaxAge(Duration.ofSeconds(10));
 		retriever.setTimeout(Duration.ofSeconds(100));
 		retriever.setFetchDestination("/tmp/cosmic_classification.csv");
