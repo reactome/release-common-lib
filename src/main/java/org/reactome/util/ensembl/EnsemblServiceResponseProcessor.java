@@ -61,7 +61,7 @@ public final class EnsemblServiceResponseProcessor
 	 * returns the important information of the response as an EnsemblServiceResult object
 	 * @param urlConnection URLConnection from the EnsEMBL service
 	 * @return EnsemblServiceResult object containing the relevant information from the response
-	 * @throws IOException
+	 * @throws IOException Thrown if unable to get response code or message from urlConnection
 	 */
 	public EnsemblServiceResult processResponse(HttpURLConnection urlConnection) throws IOException {
 		EnsemblServiceResult result = urlConnection.getHeaderFields().get("Retry-After") != null ?
