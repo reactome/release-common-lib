@@ -1,16 +1,14 @@
 package org.reactome.release.common.dataretrieval.cosmic;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.reactome.release.common.dataretrieval.AuthenticatableFileRetriever;
 
 import java.io.*;
 import java.net.*;
 import java.util.Base64;
 import java.util.stream.Collectors;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-
 
 /**
  * Get COSMIC data file.
@@ -62,8 +60,9 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 				{
 					case HttpURLConnection.HTTP_OK:
 						// Now we need to turn parse the JSON in responseString and extract the URL to download from.
-						JsonReader reader = Json.createReader(new StringReader(content));
-						JsonObject responseObject = reader.readObject();
+
+						JSONParser jsonParser = new JSONParser();
+						JSONObject responseObject = (JSONObject) jsonParser.parse(content);
 						downloadURL = responseObject.get("url").toString().replaceAll("\"", "");
 						// Update this object's downloadURL to be the one that came back from the request
 						this.setDataURL(new URI(downloadURL));
@@ -86,6 +85,9 @@ public class COSMICFileRetriever extends AuthenticatableFileRetriever
 		catch (URISyntaxException e)
 		{
 			logger.error("The URL from COSMIC might be malformed. URL is: \"{}\", Error message is: {}", downloadURL, e.getMessage() );
+			e.printStackTrace();
+		} catch (ParseException e) {
+			logger.error("Error parsing JSON content.  URL is: {}, Error message is {}", downloadURL, e.getMessage());
 			e.printStackTrace();
 		}
 		return gotDownloadURLOK;
