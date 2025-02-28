@@ -1,25 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.reactome.release</groupId>
 	<artifactId>release-common-lib</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
-	<description>Common components used throughout the Release process.</description>
+	<description>Common components used throughout the Release process</description>
 	<url>https://github.com/reactome/release-common-lib</url>
-
 	<organization>
 		<name>Reactome</name>
 		<url>https://reactome.org</url>
 	</organization>
-
 	<licenses>
 		<license>
-			<name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
-			<url>https://www.gnu.org/licenses/agpl-3.0.txt</url>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
 
@@ -47,31 +45,43 @@
 		<url>https://github.com/reactome/release-common-lib</url>
 		<tag>develop</tag>
 	</scm>
+	<!-- defines repositories that releases and snapshots are deployed -->
+	<distributionManagement>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<properties>
 		<!-- dependencies -->
+		<commons.lang.version>2.5</commons.lang.version>
 		<commons.net.version>3.8.0</commons.net.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<httpclient.version>4.5.13</httpclient.version>
 		<log4j.version>2.17.0</log4j.version>
-		<javax.json.version>1.1.4</javax.json.version>
+		<json.simple.version>1.1.1</json.simple.version>
 		<junit.version>5.8.2</junit.version>
 		<junit.platform.version>1.8.2</junit.platform.version>
 		<mockito.version>3.12.4</mockito.version>
-		<reactome.base.core.version>1.0.0-SNAPSHOT</reactome.base.core.version>
+		<reactome.base.core.version>1.0.1</reactome.base.core.version>
 
 		<!-- build -->
-		<jdk.version>1.8</jdk.version>
+		<jdk.version>11</jdk.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<!-- maven build and plugins -->
 		<maven.compiler.version>3.8.1</maven.compiler.version>
 		<maven.gpg.version>3.0.1</maven.gpg.version>
-		<maven.javadoc.version>3.3.1</maven.javadoc.version>
+		<maven.javadoc.version>3.11.2</maven.javadoc.version>
 		<maven.release.version>2.5.3</maven.release.version>
 		<maven.source.version>3.2.1</maven.source.version>
 		<maven.surefire.version>2.22.2</maven.surefire.version>
-		<maven.tidy.version>1.1.0</maven.tidy.version>
+		<maven.tidy.version>1.3.0</maven.tidy.version>
 		<nexus-staging-maven-plugin>1.6.8</nexus-staging-maven-plugin>
 	</properties>
 
@@ -125,13 +135,6 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.junit.vintage</groupId>
-			<artifactId>junit-vintage-engine</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -205,6 +208,14 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<source>11</source>
+					<additionalOptions>-Xdoclint:none</additionalOptions>
+
+					<links>
+						<link>https://docs.oracle.com/en/java/javase/11/docs/api/</link>
+					</links>
+				</configuration>
 			</plugin>
 
 			<!-- creates jar file containing source (*.java) files for the project-->
@@ -296,18 +307,21 @@
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>tidy-maven-plugin</artifactId>
+				<version>${maven.tidy.version}</version>
+				<executions>
+					<execution>
+						<id>validate</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
-
-	<!-- defines repositories that releases and snapshots are deployed -->
-	<distributionManagement>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-		</repository>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>
