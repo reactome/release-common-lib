@@ -31,7 +31,7 @@ public interface CustomLoggable
 	 * @param newAppenderName - the name of the new appender.
 	 * @param append - append, or not (truncate).
 	 * @param level - logging level.
-	 * @return
+	 * @return Logger with configurations from parameters set
 	 */
 	default Logger createLogger(String logFileName, String oldAppenderName, String newAppenderName, boolean append, Level level)
 	{
@@ -105,7 +105,7 @@ public interface CustomLoggable
 	 * @param level - logging level.
 	 * @param oldLogger - the old Logger - used to log the process of creating the new logger.
 	 * @param loggerContainerClassTypeName - name of class that invokes this method (no easy way to get that within the function via reflection, so please set this correctly).
-	 * @return
+	 * @return Logger with configurations from parameters set
 	 */
 	default Logger createLogger(String logFileName, String oldAppenderName, String newAppenderName, boolean append, Level level, Logger oldLogger, String loggerContainerClassTypeName)
 	{

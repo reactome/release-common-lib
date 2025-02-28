@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
  * It made more sense to implement Runnable, but ExecutorService.invokeAll only accepts Callables.
  * The return of this calling call() on this object will be true if unzipping doesn't completely fail,
  * but you should not rely on this. The source file does *not* get removed by this process.
- * <br/><br/>
+ *
  * Example usage:
 <pre>
 	GUnzipCallable datUnzipper1 = new GUnzipCallable(Paths.get("large_file_1.dat.gz"), Paths.get("./large_file_1.dat"));
@@ -50,7 +50,8 @@ public class GUnzipCallable implements Callable<Boolean>
 	
 	/**
 	 * Decompress a gzip file.
-	 * @throws IOException
+	 * @throws IOException Thrown if unable to create a file stream for the source (zipped file) or
+	 * target (unzipped file) or to read from the source or write to the target.
 	 */
 	public void decompressGzip() throws IOException
 	{

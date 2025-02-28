@@ -1,33 +1,18 @@
 package org.reactome.release.common.dataretrieval;	
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.SocketException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.*;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.conn.UnsupportedSchemeException;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
@@ -138,18 +123,18 @@ public class FileRetriever implements DataRetriever {
 			}
 			else
 			{
-				throw new UnsupportedSchemeException("URI "+this.uri.toString()+" uses an unsupported scheme: "+this.uri.getScheme());
+				throw new Exception("URI "+this.uri.toString()+" uses an unsupported scheme: "+this.uri.getScheme());
 			}
 		}
 		catch (URISyntaxException e)
 		{
 			logger.error("Error creating download destination: " + this.destination, e);
-			e.printStackTrace();
+			throw e;
 		}
 		catch (IOException e)
 		{
 			logger.error("Unable to create parent directory of download destination: " + path.toString(), e);
-			e.printStackTrace();
+			throw e;
 		}
 		catch (Exception e)
 		{
@@ -160,12 +145,12 @@ public class FileRetriever implements DataRetriever {
 
 	}
 
-	protected void doFtpDownload() throws SocketException, IOException, FileNotFoundException, Exception
+	protected void doFtpDownload() throws Exception
 	{
 		doFtpDownload(null, null);
 	}
 	
-	protected void doFtpDownload(String user, String password) throws SocketException, IOException, FileNotFoundException, Exception
+	protected void doFtpDownload(String user, String password) throws Exception
 	{
 		// user is "anonymous" if provided username is null/empty
 		if (user == null || user.trim().equals(""))
@@ -240,48 +225,40 @@ public class FileRetriever implements DataRetriever {
 		}
 	}
 
-	
-	protected void doHttpDownload(Path path) throws HttpHostConnectException, IOException, Exception
+	protected void doHttpDownload(Path path) throws Exception, IOException
 	{
-		this.doHttpDownload(path, HttpClientContext.create());
-	}
-	
-	protected void doHttpDownload(Path path, HttpClientContext context) throws Exception, HttpHostConnectException, IOException
-	{
-		HttpGet get = new HttpGet(this.uri);
-		//Need to multiply by 1000 because timeouts are in milliseconds.
-		RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT)
-											.setConnectTimeout(1000 * (int)this.timeout.getSeconds())
-											.setSocketTimeout(1000 * (int)this.timeout.getSeconds())
-											.setConnectionRequestTimeout(1000 * (int)this.timeout.getSeconds()).build();
-		
-		get.setConfig(config);
-		
 		int retries = this.numRetries;
 		boolean done = retries + 1 <= 0;
 		while(!done)
 		{
-			try( CloseableHttpClient client = HttpClients.createDefault();
-				CloseableHttpResponse response = client.execute(get, context);
-				OutputStream outputFile = new FileOutputStream(path.toFile()))
+			try
 			{
-				int statusCode = response.getStatusLine().getStatusCode();
+				HttpURLConnection urlConnection = getHttpURLConnection();
+
+				//Need to multiply by 1000 because timeouts are in milliseconds.
+				int delayInMilliseconds = 1000 * (int)this.timeout.getSeconds();
+				urlConnection.setConnectTimeout(delayInMilliseconds);
+
+				urlConnection.setReadTimeout(delayInMilliseconds);
+
+				int statusCode = urlConnection.getResponseCode();
 				// If status code was not 200, we should print something so that the users know that an unexpected response was received.
-				if (statusCode != HttpStatus.SC_OK)
+				if (statusCode != HttpURLConnection.HTTP_OK)
 				{
 					if (String.valueOf(statusCode).startsWith("4") || String.valueOf(statusCode).startsWith("5"))
 					{
-						logger.error("Response code was 4xx/5xx: {}, Status line is: {}", statusCode, response.getStatusLine());
+						logger.error("Response code was 4xx/5xx: {}, Status line is: {}", statusCode, urlConnection.getResponseMessage());
 					}
 					else
 					{
-						logger.warn("Response was not \"200\". It was: {}", response.getStatusLine());
+						logger.warn("Response was not \"200\". It was: {}", urlConnection.getResponseMessage());
 					}
 				}
-				response.getEntity().writeTo(outputFile);
+
+				Files.copy(urlConnection.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 				done = true;
 			}
-			catch (ConnectTimeoutException e)
+			catch (SocketTimeoutException e)
 			{
 				// we will only be retrying the connection timeouts, defined as the time required to establish a connection.
 				// we will not handle socket timeouts (inactivity that occurs after the connection has been established).
@@ -295,17 +272,15 @@ public class FileRetriever implements DataRetriever {
 					throw new Exception("Connection timed out. Number of retries ("+this.numRetries+") exceeded. No further attempts will be made.", e);
 				}
 			}
-			catch (HttpHostConnectException e)
-			{
-				logger.error("Could not connect to host {} !",get.getURI().getHost());
-				e.printStackTrace();
-				throw e;
-			}
 			catch (IOException e) {
 				logger.error("Exception caught: {}",e.getMessage());
 				throw e;
 			}
 		}
+	}
+
+	protected HttpURLConnection getHttpURLConnection() throws IOException {
+		return (HttpURLConnection) this.uri.toURL().openConnection();
 	}
 
 	public Duration getMaxAge()
@@ -370,4 +345,3 @@ public class FileRetriever implements DataRetriever {
 	}
 	
 }
-

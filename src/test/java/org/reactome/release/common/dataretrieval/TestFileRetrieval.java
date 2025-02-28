@@ -5,12 +5,12 @@ package org.reactome.release.common.dataretrieval;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,16 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.http.HttpEntity;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HttpContext;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,18 +41,7 @@ public class TestFileRetrieval {
 	
 	@Mock
 	URI mockUri;
-	
-	@Mock
-	CloseableHttpClient mockClient;
-	
-	@Mock
-	CloseableHttpResponse mockResponse;
 
-	@Mock
-	StatusLine mockStatusLine;
-	
-	HttpEntity entity = new ByteArrayEntity(MESSAGE_CONTENT.getBytes());
-	
 	@Before
 	public void setup()
 	{
@@ -69,48 +49,38 @@ public class TestFileRetrieval {
 	}
 	
 	/**
-	 * Test method for {@link org.reactome.addlinks.dataretrieval.FileRetriever#fetchData()}.
+	 * Test method for {@link org.reactome.release.common.dataretrieval.FileRetriever#fetchData()}.
 	 * @throws Exception 
 	 */
 	@Test
 	public void testFetchData() throws Exception
 	{
-		try(MockedStatic<HttpClients> mockedStatic = Mockito.mockStatic(HttpClients.class);)
-		{
-			DataRetriever retriever = new FileRetriever();
-			//retrieve google - it should be pretty easy.
-			URI uri = new URI("http://www.google.com");
-			retriever.setDataURL(uri);
-			
-			Mockito.when(mockResponse.getEntity()).thenReturn(entity);
-			Mockito.when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-			Mockito.when(mockClient.execute(any(HttpUriRequest.class))).thenReturn(mockResponse);
-			Mockito.when(mockClient.execute(any(HttpUriRequest.class), (HttpContext) any(HttpContext.class))).thenReturn(mockResponse);
-			
-			Mockito.when(HttpClients.createDefault()).thenReturn(mockClient);
-			
-			String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
-			retriever.setFetchDestination(dest);
-			Duration age = Duration.of(5, ChronoUnit.SECONDS);
-			retriever.setMaxAge(age);
-			
-			retriever.fetchData();
-			assertTrue(Files.exists(Paths.get(dest)));
-			
-			//Sleep for 6 seconds, and then re-download because the file is stale (MAX AGE was 5 seconds).
-			Thread.sleep(Duration.of(6, ChronoUnit.SECONDS).toMillis());
-			retriever.fetchData();
-			assertTrue(Files.exists(Paths.get(dest)));
-			//now set a longer maxAge.
-			age = Duration.of(100, ChronoUnit.SECONDS);
-			retriever.setMaxAge(age);
-			// this time, the file will not be stale (because maxAge is larger) so nothing will be downloaded.
-			retriever.fetchData();
-			//check that the file exists.
-			assertTrue(Files.exists(Paths.get(dest)));
-		}
+		DataRetriever retriever = new FileRetriever();
+		//retrieve google - it should be pretty easy.
+		URI uri = new URI("https://www.google.com");
+		retriever.setDataURL(uri);
+
+		String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
+		retriever.setFetchDestination(dest);
+		Duration age = Duration.of(5, ChronoUnit.SECONDS);
+		retriever.setMaxAge(age);
+
+		retriever.fetchData();
+		assertTrue(Files.exists(Paths.get(dest)));
+
+		//Sleep for 6 seconds, and then re-download because the file is stale (MAX AGE was 5 seconds).
+		Thread.sleep(Duration.of(6, ChronoUnit.SECONDS).toMillis());
+		retriever.fetchData();
+		assertTrue(Files.exists(Paths.get(dest)));
+		//now set a longer maxAge.
+		age = Duration.of(100, ChronoUnit.SECONDS);
+		retriever.setMaxAge(age);
+		// this time, the file will not be stale (because maxAge is larger) so nothing will be downloaded.
+		retriever.fetchData();
+		//check that the file exists.
+		assertTrue(Files.exists(Paths.get(dest)));
 	}
-	
+
 	/**
 	 * Test retrieving FTP data.
 	 * @throws Exception
@@ -153,7 +123,7 @@ public class TestFileRetrieval {
 		}
 	}
 	
-	/**
+/**
 	 * Test FTP Error handling.
 	 * @throws Exception
 	 */
@@ -202,75 +172,67 @@ public class TestFileRetrieval {
 	
 	/**
 	 * Test HTTP Error handling
-	 * @throws ClientProtocolException
-	 * @throws IOException
 	 * @throws Exception
 	 */
 	@Test
-	public void testHttpErr() throws ClientProtocolException, IOException, Exception
+	public void testHttpErr() throws Exception
 	{
-		try(MockedStatic<HttpClients> mockedStatic = Mockito.mockStatic(HttpClients.class);)
+		FileRetriever retriever = Mockito.spy(FileRetriever.class);
+		//retrieve google - it should be pretty easy.
+		retriever.setDataURL(new URI("https://www.google.com"));
+		String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
+		retriever.setFetchDestination(dest);
+		retriever.setMaxAge(Duration.of(1,ChronoUnit.SECONDS));
+		retriever.setNumRetries(0);
+		retriever.setTimeout(Duration.of(1, ChronoUnit.SECONDS));
+
+		try
 		{
-			Mockito.when(mockClient.execute(any(HttpUriRequest.class), any(HttpContext.class))).thenThrow(new ClientProtocolException("MOCK Generic Error"));
-			
-			Mockito.when(HttpClients.createDefault()).thenReturn(mockClient);
-			
-			DataRetriever retriever = new FileRetriever();
-			//retrieve google - it should be pretty easy.
-			URI uri = new URI("http://www.google.com");
-			retriever.setDataURL(uri);
-			String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
-			retriever.setFetchDestination(dest);
-			Duration age = Duration.of(1,ChronoUnit.SECONDS);
-			retriever.setMaxAge(age);
-			((FileRetriever)retriever).setNumRetries(0);
-			((FileRetriever)retriever).setTimeout(Duration.of(1, ChronoUnit.SECONDS));
-			try
-			{
-				retriever.fetchData();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				assertTrue(e.getMessage().contains("MOCK Generic Error"));
-			}
+			Mockito.doThrow(new SocketTimeoutException("Dummy text"))
+				.when(retriever).getHttpURLConnection();
+			retriever.fetchData();
+
+			// Test fails here since an fetch data should throw an exception going to the catch block
+			// (that is, fetching data on previous line should throw an exception due to the mock)
+			fail();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			assertTrue(e.getMessage().contains("No further attempts will be made"));
 		}
 	}
 	
 	/**
 	 * Test HTTP Retry.
-	 * @throws ClientProtocolException
-	 * @throws IOException
 	 * @throws Exception
 	 */
 	@Test
-	public void testHttpRetry() throws ClientProtocolException, IOException, Exception
+	public void testHttpRetry() throws Exception
 	{
-		try(MockedStatic<HttpClients> mockedStatic = Mockito.mockStatic(HttpClients.class);)
+		FileRetriever retriever = Mockito.spy(FileRetriever.class);
+		//retrieve google - it should be pretty easy.
+		retriever.setDataURL(new URI("https://www.google.com"));
+		String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
+		retriever.setFetchDestination(dest);
+		retriever.setMaxAge(Duration.of(1,ChronoUnit.SECONDS));
+		retriever.setNumRetries(1);
+		retriever.setTimeout(Duration.of(1, ChronoUnit.SECONDS));
+
+		try
 		{
-			Mockito.when(mockClient.execute(any(HttpUriRequest.class), any(HttpContext.class))).thenThrow(new ConnectTimeoutException("MOCK Timeout Error"));
-			
-			Mockito.when(HttpClients.createDefault()).thenReturn(mockClient);
-			
-			DataRetriever retriever = new FileRetriever();
-			//retrieve google - it should be pretty easy.
-			URI uri = new URI("http://www.google.com");
-			retriever.setDataURL(uri);
-			String dest = "/tmp/testFetchData_"+ String.valueOf((new Random()).nextInt(Integer.MAX_VALUE));
-			retriever.setFetchDestination(dest);
-			Duration age = Duration.of(1,ChronoUnit.SECONDS);
-			retriever.setMaxAge(age);
-			((FileRetriever)retriever).setNumRetries(1);
-			((FileRetriever)retriever).setTimeout(Duration.of(1, ChronoUnit.SECONDS));
-			try
-			{
-				retriever.fetchData();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				assertTrue(e.getMessage().contains("Connection timed out. Number of retries (1) exceeded. No further attempts will be made."));
-			}
+			Mockito.doThrow(new SocketTimeoutException("Dummy text"))
+				.when(retriever).getHttpURLConnection();
+			retriever.fetchData();
+
+			// Test fails here since an fetch data should throw an exception going to the catch block
+			// (that is, fetching data on previous line should throw an exception due to the mock)
+			fail();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			assertTrue(e.getMessage().contains("Connection timed out. Number of retries (1) exceeded. No further attempts will be made."));
 		}
 	}
 }

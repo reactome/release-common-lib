@@ -23,7 +23,7 @@ public abstract class AuthenticatableFileRetriever extends FileRetriever
 	
 	/**
 	 * Set the user name.
-	 * @param userName
+	 * @param userName User name to set
 	 */
 	public void setUserName(String userName)
 	{
@@ -32,7 +32,7 @@ public abstract class AuthenticatableFileRetriever extends FileRetriever
 	
 	/**
 	 * Set the password.
-	 * @param password
+	 * @param password Password to set
 	 */
 	public void setPassword(String password)
 	{
