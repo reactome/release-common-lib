@@ -3,7 +3,8 @@ package org.reactome.util.general;
 import java.util.Properties;
 
 /**
- * A specialised implementation of Properties that will throw an exception if a requested property key is missing or has no value. 
+ * A specialised implementation of Properties that will throw an exception if a requested property key is missing or
+ * has no value.
  * @author sshorser
  *
  */
